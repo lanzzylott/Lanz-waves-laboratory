@@ -1,0 +1,3600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lanz and Friends Wave Laboratory</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    min-height:100vh;
+    font-family:Arial, Helvetica, sans-serif;
+    color:#eafaff;
+    background:#020817;
+    overflow-x:hidden;
+}
+
+/* =========================================================
+   ANIMATED BACKGROUND
+========================================================= */
+
+#backgroundCanvas{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+    pointer-events:none;
+    opacity:.9;
+}
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+        radial-gradient(circle at 15% 20%,rgba(0,170,255,.10),transparent 28%),
+        radial-gradient(circle at 85% 30%,rgba(30,100,255,.08),transparent 30%),
+        radial-gradient(circle at 50% 90%,rgba(0,200,255,.07),transparent 30%);
+}
+
+/* =========================================================
+   LOADING SCREEN
+========================================================= */
+
+#loadingScreen{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:
+        radial-gradient(circle at center,rgba(0,100,180,.20),transparent 45%),
+        #010713;
+    overflow:hidden;
+    transition:opacity .8s ease,visibility .8s ease;
+}
+
+#loadingScreen.hide{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+}
+
+.loadingGrid{
+    position:absolute;
+    inset:-50%;
+    opacity:.25;
+    background-image:
+        linear-gradient(rgba(52,190,255,.08) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(52,190,255,.08) 1px,transparent 1px);
+    background-size:55px 55px;
+    transform:perspective(500px) rotateX(60deg);
+    animation:gridMove 8s linear infinite;
+}
+
+@keyframes gridMove{
+    from{
+        transform:perspective(500px) rotateX(60deg) translateY(0);
+    }
+
+    to{
+        transform:perspective(500px) rotateX(60deg) translateY(55px);
+    }
+}
+
+.loadingContent{
+    position:relative;
+    z-index:20;
+    width:min(90%,700px);
+    text-align:center;
+}
+
+.loadingOrb{
+    width:100px;
+    height:100px;
+    margin:0 auto 30px;
+    border-radius:50%;
+    position:relative;
+    border:2px solid rgba(76,220,255,.7);
+    box-shadow:
+        0 0 20px rgba(0,190,255,.5),
+        0 0 70px rgba(0,120,255,.25),
+        inset 0 0 25px rgba(0,200,255,.25);
+    animation:orbPulse 2s ease-in-out infinite;
+}
+
+.loadingOrb::before,
+.loadingOrb::after{
+    content:"";
+    position:absolute;
+    inset:12px;
+    border:2px solid rgba(100,230,255,.6);
+    border-radius:50%;
+}
+
+.loadingOrb::before{
+    transform:scaleX(.45);
+    animation:orbSpin 3s linear infinite;
+}
+
+.loadingOrb::after{
+    transform:scaleY(.45);
+    animation:orbSpin 2s linear infinite reverse;
+}
+
+@keyframes orbPulse{
+    0%,100%{
+        transform:scale(1);
+    }
+
+    50%{
+        transform:scale(1.08);
+    }
+}
+
+@keyframes orbSpin{
+    from{
+        transform:rotate(0deg) scaleX(.45);
+    }
+
+    to{
+        transform:rotate(360deg) scaleX(.45);
+    }
+}
+
+.loadingTitle{
+    font-size:clamp(2rem,6vw,4.8rem);
+    font-weight:900;
+    letter-spacing:2px;
+    line-height:1.05;
+    margin-bottom:12px;
+    background:linear-gradient(
+        110deg,
+        #ffffff 0%,
+        #6cecff 35%,
+        #ffffff 50%,
+        #6cecff 65%,
+        #ffffff 100%
+    );
+    background-size:250% auto;
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    animation:titleShine 2.4s linear infinite;
+}
+
+@keyframes titleShine{
+    from{
+        background-position:250% center;
+    }
+
+    to{
+        background-position:-250% center;
+    }
+}
+
+.loadingSubtitle{
+    color:#8ddff5;
+    letter-spacing:4px;
+    font-size:.75rem;
+    margin-bottom:30px;
+}
+
+.loadingBarOuter{
+    width:min(500px,90%);
+    height:8px;
+    margin:auto;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(90,210,255,.25);
+    border-radius:100px;
+    overflow:hidden;
+    box-shadow:0 0 20px rgba(0,170,255,.12);
+}
+
+#loadingProgress{
+    width:0%;
+    height:100%;
+    border-radius:100px;
+    background:linear-gradient(90deg,#168cff,#65edff,#ffffff);
+    box-shadow:0 0 15px #39dfff;
+    transition:width .08s linear;
+}
+
+.loadingInfo{
+    display:flex;
+    justify-content:space-between;
+    width:min(500px,90%);
+    margin:10px auto 0;
+    font-size:.75rem;
+    color:#75c9dd;
+}
+
+#skipLoading{
+    margin-top:28px;
+    padding:10px 22px;
+    border:1px solid rgba(100,225,255,.45);
+    border-radius:30px;
+    background:rgba(0,100,160,.15);
+    color:#bcefff;
+    cursor:pointer;
+    transition:.25s;
+}
+
+#skipLoading:hover{
+    background:rgba(0,170,255,.25);
+    box-shadow:0 0 20px rgba(0,200,255,.25);
+}
+
+/* =========================================================
+   WATER RIPPLE TRANSITION
+========================================================= */
+
+.waterTransition{
+    position:absolute;
+    inset:0;
+    z-index:100;
+    pointer-events:none;
+    overflow:hidden;
+    opacity:0;
+}
+
+.waterTransition.active{
+    opacity:1;
+}
+
+.ripple{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    transform:translate(-50%,-50%) scale(0);
+    border:3px solid rgba(105,232,255,.95);
+    box-shadow:
+        0 0 15px rgba(54,191,255,.8),
+        0 0 40px rgba(54,191,255,.45),
+        inset 0 0 20px rgba(54,191,255,.2);
+}
+
+.ripple1{
+    animation:rippleExpand 1.25s ease-out forwards;
+}
+
+.ripple2{
+    animation:rippleExpand 1.25s .12s ease-out forwards;
+}
+
+.ripple3{
+    animation:rippleExpand 1.25s .24s ease-out forwards;
+}
+
+.ripple4{
+    animation:rippleExpand 1.25s .36s ease-out forwards;
+}
+
+.ripple5{
+    animation:rippleExpand 1.25s .48s ease-out forwards;
+}
+
+@keyframes rippleExpand{
+    0%{
+        width:20px;
+        height:20px;
+        transform:translate(-50%,-50%) scale(0);
+        opacity:1;
+        border-width:5px;
+    }
+
+    55%{
+        opacity:.8;
+    }
+
+    100%{
+        width:180vw;
+        height:180vw;
+        transform:translate(-50%,-50%) scale(1);
+        opacity:0;
+        border-width:1px;
+    }
+}
+
+/* =========================================================
+   MAIN CONTENT
+========================================================= */
+
+#mainContent{
+    position:relative;
+    z-index:1;
+    min-height:100vh;
+    opacity:0;
+    transform:translateY(25px);
+    transition:opacity .9s ease,transform .9s ease;
+}
+
+#mainContent.show{
+    opacity:1;
+    transform:translateY(0);
+}
+
+.container{
+    width:min(1200px,92%);
+    margin:auto;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+header{
+    padding:70px 0 40px;
+    text-align:center;
+}
+
+.badge{
+    display:inline-block;
+    padding:7px 16px;
+    border:1px solid rgba(80,215,255,.35);
+    border-radius:30px;
+    color:#73e5ff;
+    background:rgba(0,130,200,.10);
+    font-size:.75rem;
+    letter-spacing:2px;
+    margin-bottom:18px;
+}
+
+h1{
+    font-size:clamp(2.5rem,6vw,5rem);
+    line-height:1;
+    margin-bottom:18px;
+    background:linear-gradient(100deg,#ffffff,#63ddff,#9abaff,#ffffff);
+    background-size:250% auto;
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    animation:titleShine 5s linear infinite;
+}
+
+.heroText{
+    max-width:720px;
+    margin:auto;
+    color:#9cc9d9;
+    line-height:1.7;
+}
+
+/* =========================================================
+   WAVE SELECTOR
+========================================================= */
+
+.waveSelector{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:10px;
+    margin:30px 0;
+}
+
+.waveButton{
+    min-height:82px;
+    border:1px solid rgba(80,210,255,.18);
+    background:rgba(5,30,55,.65);
+    color:#bcefff;
+    border-radius:15px;
+    cursor:pointer;
+    transition:.25s;
+    padding:10px;
+}
+
+.waveButton:hover{
+    transform:translateY(-3px);
+    border-color:rgba(90,225,255,.55);
+    box-shadow:0 10px 25px rgba(0,180,255,.10);
+}
+
+.waveButton.active{
+    background:linear-gradient(
+        145deg,
+        rgba(0,130,210,.38),
+        rgba(10,55,100,.65)
+    );
+    border-color:#4bdfff;
+    box-shadow:
+        0 0 20px rgba(0,200,255,.18),
+        inset 0 0 20px rgba(0,150,255,.08);
+}
+
+.waveIcon{
+    display:block;
+    font-size:1.8rem;
+    margin-bottom:6px;
+}
+
+.waveName{
+    font-size:.8rem;
+}
+
+/* =========================================================
+   LAB
+========================================================= */
+
+.lab{
+    border:1px solid rgba(76,215,255,.2);
+    border-radius:25px;
+    background:rgba(3,20,38,.72);
+    backdrop-filter:blur(12px);
+    overflow:hidden;
+    box-shadow:
+        0 20px 80px rgba(0,0,0,.25),
+        0 0 50px rgba(0,140,255,.05);
+}
+
+.labHeader{
+    padding:20px 25px;
+    border-bottom:1px solid rgba(80,210,255,.12);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+}
+
+.labHeader h2{
+    font-size:1.15rem;
+}
+
+.live{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#7ff4d5;
+    font-size:.7rem;
+    letter-spacing:1px;
+}
+
+.liveDot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#58ffd1;
+    box-shadow:0 0 12px #58ffd1;
+    animation:livePulse 1.2s infinite;
+}
+
+@keyframes livePulse{
+    50%{
+        opacity:.3;
+    }
+}
+
+.canvasWrap{
+    position:relative;
+    width:100%;
+    height:500px;
+    background:
+        linear-gradient(rgba(50,170,255,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(50,170,255,.035) 1px,transparent 1px),
+        #02101d;
+    background-size:40px 40px;
+}
+
+#waveCanvas{
+    width:100%;
+    height:100%;
+    display:block;
+}
+
+.character{
+    position:absolute;
+    right:25px;
+    bottom:20px;
+    width:190px;
+    padding:15px;
+    border-radius:18px;
+    background:rgba(1,18,32,.82);
+    border:1px solid rgba(80,220,255,.25);
+    backdrop-filter:blur(8px);
+    box-shadow:0 10px 35px rgba(0,0,0,.25);
+    z-index:5;
+}
+
+.robot{
+    font-size:2.8rem;
+    text-align:center;
+    margin-bottom:8px;
+}
+
+#characterTitle{
+    color:#6feaff;
+    font-weight:bold;
+    text-align:center;
+    margin-bottom:5px;
+}
+
+#characterText{
+    color:#a7cbd7;
+    font-size:.75rem;
+    line-height:1.5;
+    text-align:center;
+}
+
+/* =========================================================
+   PHYSICS PANEL
+========================================================= */
+
+.physicsPanel{
+    padding:20px 25px;
+    border-top:1px solid rgba(80,210,255,.1);
+    background:rgba(0,10,25,.32);
+}
+
+.physicsTitle{
+    font-size:.75rem;
+    letter-spacing:2px;
+    color:#71e7ff;
+    font-weight:bold;
+    margin-bottom:14px;
+}
+
+.physicsValues{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+}
+
+.physicsValue{
+    padding:12px;
+    border-radius:12px;
+    background:rgba(255,255,255,.025);
+    border:1px solid rgba(100,220,255,.08);
+}
+
+.physicsValue span{
+    display:block;
+    color:#789eac;
+    font-size:.68rem;
+    margin-bottom:5px;
+}
+
+.physicsValue strong{
+    color:#d8faff;
+    font-size:.95rem;
+}
+
+.equationBox{
+    margin-top:12px;
+    padding:12px 15px;
+    border-radius:12px;
+    background:rgba(0,150,230,.07);
+    border:1px solid rgba(70,210,255,.1);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    font-family:monospace;
+    color:#baf5ff;
+}
+
+.scaleNote{
+    margin-top:9px;
+    color:#668895;
+    font-size:.68rem;
+}
+
+/* =========================================================
+   CONTROLS
+========================================================= */
+
+.controls{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+    padding:25px;
+    border-top:1px solid rgba(80,210,255,.1);
+}
+
+.control{
+    padding:15px;
+    border-radius:15px;
+    background:rgba(255,255,255,.025);
+    border:1px solid rgba(100,220,255,.08);
+}
+
+.controlTop{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:12px;
+}
+
+.control label{
+    color:#9bd4e4;
+    font-size:.85rem;
+}
+
+.controlValue{
+    color:#6ce8ff;
+    font-weight:bold;
+    font-size:.85rem;
+}
+
+input[type="range"]{
+    width:100%;
+    appearance:none;
+    height:6px;
+    border-radius:10px;
+    outline:none;
+    background:linear-gradient(
+        90deg,
+        #32cfff 0%,
+        #32cfff var(--fill,50%),
+        rgba(255,255,255,.10) var(--fill,50%),
+        rgba(255,255,255,.10) 100%
+    );
+    cursor:pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb{
+    appearance:none;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:#eaffff;
+    border:3px solid #3edbff;
+    box-shadow:0 0 12px rgba(50,220,255,.7);
+}
+
+input[type="range"]::-moz-range-thumb{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:#eaffff;
+    border:3px solid #3edbff;
+    box-shadow:0 0 12px rgba(50,220,255,.7);
+}
+
+.buttonRow{
+    display:flex;
+    gap:10px;
+    padding:0 25px 25px;
+}
+
+.actionButton{
+    flex:1;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid rgba(90,220,255,.2);
+    background:rgba(0,120,180,.12);
+    color:#c9f6ff;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.actionButton:hover{
+    background:rgba(0,160,230,.25);
+    border-color:#5bdfff;
+}
+
+.actionButton.primary{
+    background:linear-gradient(100deg,#087dba,#0caad5);
+    color:white;
+    box-shadow:0 0 20px rgba(0,170,255,.15);
+}
+
+/* =========================================================
+   INFO
+========================================================= */
+
+.infoGrid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+    margin:30px 0;
+}
+
+.infoCard{
+    padding:22px;
+    border:1px solid rgba(80,210,255,.12);
+    border-radius:18px;
+    background:rgba(3,25,45,.55);
+}
+
+.infoCard h3{
+    color:#6de6ff;
+    margin-bottom:10px;
+}
+
+.infoCard p{
+    color:#9fc5d2;
+    line-height:1.6;
+    font-size:.88rem;
+}
+
+.formula{
+    margin-top:14px;
+    padding:12px;
+    border-radius:10px;
+    background:rgba(0,140,220,.08);
+    color:#baf5ff;
+    text-align:center;
+    font-family:monospace;
+}
+
+/* =========================================================
+   VIDEO / ARTICLES
+========================================================= */
+
+.sectionTitle{
+    margin:65px 0 20px;
+    text-align:center;
+}
+
+.sectionTitle h2{
+    font-size:2rem;
+    margin-bottom:8px;
+}
+
+.sectionTitle p{
+    color:#8fb9c8;
+}
+
+.resourceGrid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+}
+
+.resourceCard{
+    overflow:hidden;
+    border-radius:18px;
+    border:1px solid rgba(80,210,255,.15);
+    background:rgba(3,25,45,.62);
+    transition:.25s;
+}
+
+.resourceCard:hover{
+    transform:translateY(-5px);
+    border-color:rgba(80,220,255,.4);
+}
+
+.videoThumbnail{
+    position:relative;
+    display:block;
+    aspect-ratio:16/9;
+    overflow:hidden;
+}
+
+.videoThumbnail img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition:.35s;
+}
+
+.resourceCard:hover img{
+    transform:scale(1.05);
+}
+
+.videoOverlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    gap:10px;
+    background:rgba(0,10,20,.35);
+}
+
+.playButton{
+    width:65px;
+    height:65px;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding-left:4px;
+    background:rgba(20,170,230,.85);
+    box-shadow:0 0 25px rgba(50,220,255,.45);
+    font-size:1.4rem;
+}
+
+.videoOverlay span{
+    font-size:.7rem;
+    letter-spacing:2px;
+}
+
+.videoDuration{
+    position:absolute;
+    right:10px;
+    bottom:10px;
+    background:rgba(0,0,0,.7);
+    padding:5px 8px;
+    border-radius:5px;
+    font-size:.65rem;
+}
+
+.resourceContent{
+    padding:18px;
+}
+
+.resourceContent h3{
+    color:#bff4ff;
+    margin-bottom:8px;
+}
+
+.resourceContent p{
+    color:#90b9c7;
+    font-size:.82rem;
+    line-height:1.5;
+}
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+footer{
+    margin-top:80px;
+    padding:35px 0;
+    text-align:center;
+    border-top:1px solid rgba(80,210,255,.1);
+    color:#648895;
+    font-size:.8rem;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:900px){
+
+    .waveSelector{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .controls{
+        grid-template-columns:1fr;
+    }
+
+    .physicsValues{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .infoGrid{
+        grid-template-columns:1fr;
+    }
+
+    .canvasWrap{
+        height:430px;
+    }
+}
+
+@media(max-width:650px){
+
+    header{
+        padding-top:45px;
+    }
+
+    .waveSelector{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .resourceGrid{
+        grid-template-columns:1fr;
+    }
+
+    .canvasWrap{
+        height:380px;
+    }
+
+    .character{
+        width:150px;
+        right:10px;
+        bottom:10px;
+    }
+
+    .robot{
+        font-size:2rem;
+    }
+
+    #characterText{
+        font-size:.68rem;
+    }
+
+    .buttonRow{
+        flex-direction:column;
+    }
+
+    .equationBox{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="backgroundCanvas"></canvas>
+
+<!-- =======================================================
+     LOADING SCREEN
+======================================================= -->
+
+<div id="loadingScreen">
+
+    <div class="loadingGrid"></div>
+
+    <div class="waterTransition" id="waterTransition">
+        <div class="ripple ripple1"></div>
+        <div class="ripple ripple2"></div>
+        <div class="ripple ripple3"></div>
+        <div class="ripple ripple4"></div>
+        <div class="ripple ripple5"></div>
+    </div>
+
+    <div class="loadingContent">
+
+        <div class="loadingOrb"></div>
+
+        <div class="loadingTitle">
+            Lanz and Friends<br>
+            Wave Laboratory
+        </div>
+
+        <div class="loadingSubtitle">
+            INTERACTIVE PHYSICS EXPERIENCE
+        </div>
+
+        <div class="loadingBarOuter">
+            <div id="loadingProgress"></div>
+        </div>
+
+        <div class="loadingInfo">
+            <span id="loadingStatus">INITIALIZING WAVE ENGINE...</span>
+            <span id="loadingPercent">0%</span>
+        </div>
+
+        <button id="skipLoading">
+            SKIP LOADING
+        </button>
+
+    </div>
+</div>
+
+<!-- =======================================================
+     MAIN WEBSITE
+======================================================= -->
+
+<main id="mainContent">
+
+<div class="container">
+
+<header>
+
+    <div class="badge">
+        STEM • PHYSICS • INTERACTIVE LAB
+    </div>
+
+    <h1>
+        Lanz and Friends<br>
+        Wave Laboratory
+    </h1>
+
+    <p class="heroText">
+        Explore the fascinating world of waves through interactive
+        simulations. Adjust the frequency, amplitude, and wave speed
+        and watch how each wave responds in real time.
+    </p>
+
+</header>
+
+<!-- =======================================================
+     WAVE SELECTOR
+======================================================= -->
+
+<div class="waveSelector">
+
+    <button class="waveButton active" data-wave="water">
+        <span class="waveIcon">🌊</span>
+        <span class="waveName">Water</span>
+    </button>
+
+    <button class="waveButton" data-wave="sound">
+        <span class="waveIcon">🔊</span>
+        <span class="waveName">Sound</span>
+    </button>
+
+    <button class="waveButton" data-wave="light">
+        <span class="waveIcon">💡</span>
+        <span class="waveName">Light</span>
+    </button>
+
+    <button class="waveButton" data-wave="transverse">
+        <span class="waveIcon">〰️</span>
+        <span class="waveName">Transverse</span>
+    </button>
+
+    <button class="waveButton" data-wave="seismic">
+        <span class="waveIcon">🌎</span>
+        <span class="waveName">Seismic</span>
+    </button>
+
+    <button class="waveButton" data-wave="longitudinal">
+        <span class="waveIcon">↔️</span>
+        <span class="waveName">Longitudinal</span>
+    </button>
+
+</div>
+
+<!-- =======================================================
+     LAB
+======================================================= -->
+
+<section class="lab">
+
+    <div class="labHeader">
+
+        <h2 id="waveTitle">
+            🌊 Water Wave
+        </h2>
+
+        <div class="live">
+            <span class="liveDot"></span>
+            LIVE SIMULATION
+        </div>
+
+    </div>
+
+    <div class="canvasWrap">
+
+        <canvas id="waveCanvas"></canvas>
+
+        <div class="character">
+
+            <div class="robot">🤖</div>
+
+            <div id="characterTitle">
+                Wave Buddy
+            </div>
+
+            <div id="characterText">
+                Water waves transfer energy across the surface of water.
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================================
+         PHYSICS INFORMATION
+    ==================================================== -->
+
+    <div class="physicsPanel">
+
+        <div class="physicsTitle">
+            ⚛ LIVE WAVE PHYSICS
+        </div>
+
+        <div class="physicsValues">
+
+            <div class="physicsValue">
+                <span>Frequency</span>
+                <strong id="displayFrequency">1.0 Hz</strong>
+            </div>
+
+            <div class="physicsValue">
+                <span>Amplitude</span>
+                <strong id="displayAmplitude">50</strong>
+            </div>
+
+            <div class="physicsValue">
+                <span>Wave Speed</span>
+                <strong id="displaySpeed">100 m/s</strong>
+            </div>
+
+            <div class="physicsValue">
+                <span>Wavelength</span>
+                <strong id="displayWavelength">100.00 m</strong>
+            </div>
+
+        </div>
+
+        <div class="equationBox">
+
+            <span>λ = v / f</span>
+
+            <span id="liveEquation">
+                λ = 100 / 1.0 = 100.00 m
+            </span>
+
+        </div>
+
+        <div class="scaleNote">
+            The numerical wavelength is calculated from v = fλ.
+            The wave pattern is automatically scaled on screen for visibility.
+        </div>
+
+    </div>
+
+    <!-- ===================================================
+         CONTROLS
+    ==================================================== -->
+
+    <div class="controls">
+
+        <div class="control">
+
+            <div class="controlTop">
+                <label>Frequency</label>
+                <span class="controlValue" id="frequencyValue">
+                    1.0 Hz
+                </span>
+            </div>
+
+            <input
+                id="frequency"
+                type="range"
+                min="0.2"
+                max="5"
+                step="0.1"
+                value="1"
+            >
+
+        </div>
+
+        <div class="control">
+
+            <div class="controlTop">
+                <label>Amplitude</label>
+
+                <span class="controlValue" id="amplitudeValue">
+                    50
+                </span>
+            </div>
+
+            <input
+                id="amplitude"
+                type="range"
+                min="10"
+                max="100"
+                step="1"
+                value="50"
+            >
+
+        </div>
+
+        <div class="control">
+
+            <div class="controlTop">
+                <label>Wave Speed</label>
+
+                <span class="controlValue" id="speedValue">
+                    100 m/s
+                </span>
+            </div>
+
+            <input
+                id="speed"
+                type="range"
+                min="20"
+                max="300"
+                step="5"
+                value="100"
+            >
+
+        </div>
+
+    </div>
+
+    <div class="buttonRow">
+
+        <button class="actionButton primary" id="playPause">
+            ⏸ Pause
+        </button>
+
+        <button class="actionButton" id="stepButton">
+            ⏭ Step
+        </button>
+
+        <button class="actionButton" id="resetButton">
+            ↻ Reset
+        </button>
+
+    </div>
+
+</section>
+
+<!-- =======================================================
+     INFO
+======================================================= -->
+
+<section class="infoGrid">
+
+    <div class="infoCard">
+
+        <h3>Frequency</h3>
+
+        <p>
+            Frequency tells us how many complete wave cycles happen
+            every second. It is measured in Hertz (Hz).
+        </p>
+
+        <div class="formula">
+            f = cycles / second
+        </div>
+
+    </div>
+
+    <div class="infoCard">
+
+        <h3>Amplitude</h3>
+
+        <p>
+            Amplitude describes the maximum displacement of a wave
+            from its resting position.
+        </p>
+
+        <div class="formula">
+            Larger amplitude = greater displacement
+        </div>
+
+    </div>
+
+    <div class="infoCard">
+
+        <h3>Wavelength</h3>
+
+        <p>
+            Wavelength is the distance between matching points on
+            consecutive waves.
+        </p>
+
+        <div class="formula">
+            v = fλ
+        </div>
+
+    </div>
+
+</section>
+
+<!-- =======================================================
+     VIDEOS
+======================================================= -->
+
+<div class="sectionTitle">
+
+    <h2>🎥 Learn About Waves</h2>
+
+    <p>
+        Watch these educational videos for additional explanations.
+    </p>
+
+</div>
+
+<section class="resourceGrid">
+
+    <article class="resourceCard">
+
+        <a
+            class="videoThumbnail"
+            href="https://www.youtube.com/watch?v=gZ9ZjBwG5EA"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+
+            <img
+                src="https://img.youtube.com/vi/gZ9ZjBwG5EA/hqdefault.jpg"
+                alt="Wave lesson video thumbnail"
+            >
+
+            <div class="videoOverlay">
+                <div class="playButton">▶</div>
+                <span>WATCH ON YOUTUBE</span>
+            </div>
+
+            <div class="videoDuration">
+                WAVE LESSON
+            </div>
+
+        </a>
+
+        <div class="resourceContent">
+
+            <h3>Understanding Waves</h3>
+
+            <p>
+                Learn about the basic properties of waves and how
+                they transfer energy.
+            </p>
+
+        </div>
+
+    </article>
+
+    <article class="resourceCard">
+
+        <a
+            class="videoThumbnail"
+            href="https://www.youtube.com/watch?v=EQB4i6NqP0c"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+
+            <img
+                src="https://img.youtube.com/vi/EQB4i6NqP0c/hqdefault.jpg"
+                alt="Types of waves video thumbnail"
+            >
+
+            <div class="videoOverlay">
+
+                <div class="playButton">▶</div>
+
+                <span>WATCH ON YOUTUBE</span>
+
+            </div>
+
+            <div class="videoDuration">
+                WAVE TYPES
+            </div>
+
+        </a>
+
+        <div class="resourceContent">
+
+            <h3>Types of Waves</h3>
+
+            <p>
+                Explore transverse, longitudinal, sound, light,
+                and other wave behaviors.
+            </p>
+
+        </div>
+
+    </article>
+
+</section>
+
+<!-- =======================================================
+     ARTICLES
+======================================================= -->
+
+<div class="sectionTitle">
+
+    <h2>📚 Explore More</h2>
+
+    <p>
+        Continue learning about waves and physics.
+    </p>
+
+</div>
+
+<section class="resourceGrid">
+
+    <article class="resourceCard">
+
+        <div class="resourceContent">
+
+            <h3>Wave Motion</h3>
+
+            <p>
+                Explore wave motion, wavelength, frequency,
+                amplitude, and wave speed through physics resources.
+            </p>
+
+        </div>
+
+    </article>
+
+    <article class="resourceCard">
+
+        <div class="resourceContent">
+
+            <h3>Physics of Waves</h3>
+
+            <p>
+                Learn how waves carry energy and how different
+                types of waves behave in different situations.
+            </p>
+
+        </div>
+
+    </article>
+
+</section>
+
+<footer>
+
+    <p>
+        Lanz and Friends Wave Laboratory
+    </p>
+
+    <p>
+        Interactive STEM Physics Project • Libertad National High School
+    </p>
+
+</footer>
+
+</div>
+</main>
+
+<script>
+
+/* =========================================================
+   BACKGROUND ANIMATION
+========================================================= */
+
+const backgroundCanvas =
+    document.getElementById("backgroundCanvas");
+
+const backgroundCtx =
+    backgroundCanvas.getContext("2d");
+
+let backgroundWidth = 0;
+let backgroundHeight = 0;
+let backgroundParticles = [];
+
+function resizeBackground(){
+
+    const dpr =
+        Math.min(window.devicePixelRatio || 1,2);
+
+    backgroundWidth = window.innerWidth;
+    backgroundHeight = window.innerHeight;
+
+    backgroundCanvas.width =
+        backgroundWidth*dpr;
+
+    backgroundCanvas.height =
+        backgroundHeight*dpr;
+
+    backgroundCanvas.style.width =
+        backgroundWidth+"px";
+
+    backgroundCanvas.style.height =
+        backgroundHeight+"px";
+
+    backgroundCtx.setTransform(
+        dpr,0,0,dpr,0,0
+    );
+
+    createBackgroundParticles();
+}
+
+function createBackgroundParticles(){
+
+    backgroundParticles=[];
+
+    const amount =
+        Math.min(
+            120,
+            Math.floor(
+                backgroundWidth*backgroundHeight/12000
+            )
+        );
+
+    for(let i=0;i<amount;i++){
+
+        backgroundParticles.push({
+
+            x:Math.random()*backgroundWidth,
+
+            y:Math.random()*backgroundHeight,
+
+            radius:Math.random()*2+.5,
+
+            speed:Math.random()*.35+.08,
+
+            drift:Math.random()*1.2-.6,
+
+            phase:Math.random()*Math.PI*2,
+
+            opacity:Math.random()*.55+.15
+
+        });
+
+    }
+}
+
+function drawBackgroundWaves(time){
+
+    const spacing=110;
+
+    for(
+        let row=-2;
+        row<backgroundHeight/spacing+2;
+        row++
+    ){
+
+        const baseY=row*spacing;
+
+        backgroundCtx.beginPath();
+
+        for(
+            let x=-20;
+            x<=backgroundWidth+20;
+            x+=8
+        ){
+
+            const y=
+                baseY+
+                Math.sin(
+                    x*.008+
+                    time*.00045+
+                    row
+                )*13+
+                Math.sin(
+                    x*.0025-
+                    time*.00025
+                )*8;
+
+            if(x===-20){
+                backgroundCtx.moveTo(x,y);
+            }else{
+                backgroundCtx.lineTo(x,y);
+            }
+
+        }
+
+        backgroundCtx.strokeStyle=
+            "rgba(58,190,255,.055)";
+
+        backgroundCtx.lineWidth=1.2;
+
+        backgroundCtx.stroke();
+    }
+}
+
+function drawBackgroundGlow(time){
+
+    const positions=[
+
+        {
+            x:backgroundWidth*.15,
+            y:backgroundHeight*.25,
+            size:300,
+            speed:.0004
+        },
+
+        {
+            x:backgroundWidth*.82,
+            y:backgroundHeight*.35,
+            size:380,
+            speed:-.0003
+        },
+
+        {
+            x:backgroundWidth*.55,
+            y:backgroundHeight*.85,
+            size:320,
+            speed:.00025
+        }
+
+    ];
+
+    positions.forEach((glow,index)=>{
+
+        const pulse=
+            Math.sin(time*glow.speed+index)*35;
+
+        const radius=
+            glow.size+pulse;
+
+        const gradient=
+            backgroundCtx.createRadialGradient(
+                glow.x,
+                glow.y,
+                0,
+                glow.x,
+                glow.y,
+                radius
+            );
+
+        gradient.addColorStop(
+            0,
+            "rgba(30,170,255,.10)"
+        );
+
+        gradient.addColorStop(
+            .45,
+            "rgba(20,100,180,.035)"
+        );
+
+        gradient.addColorStop(
+            1,
+            "rgba(0,0,0,0)"
+        );
+
+        backgroundCtx.fillStyle=gradient;
+
+        backgroundCtx.beginPath();
+
+        backgroundCtx.arc(
+            glow.x,
+            glow.y,
+            radius,
+            0,
+            Math.PI*2
+        );
+
+        backgroundCtx.fill();
+
+    });
+}
+
+function drawCircuitLines(time){
+
+    backgroundCtx.save();
+
+    backgroundCtx.globalAlpha=.08;
+
+    backgroundCtx.strokeStyle="#35d7ff";
+
+    backgroundCtx.lineWidth=1;
+
+    const offset=(time*.015)%100;
+
+    for(
+        let y=80-offset;
+        y<backgroundHeight;
+        y+=100
+    ){
+
+        backgroundCtx.beginPath();
+
+        backgroundCtx.moveTo(0,y);
+
+        backgroundCtx.lineTo(
+            backgroundWidth*.2,
+            y
+        );
+
+        backgroundCtx.lineTo(
+            backgroundWidth*.25,
+            y+35
+        );
+
+        backgroundCtx.lineTo(
+            backgroundWidth*.48,
+            y+35
+        );
+
+        backgroundCtx.stroke();
+    }
+
+    backgroundCtx.restore();
+}
+
+function drawParticleConnections(){
+
+    for(
+        let i=0;
+        i<backgroundParticles.length;
+        i++
+    ){
+
+        const p=backgroundParticles[i];
+
+        for(
+            let j=i+1;
+            j<backgroundParticles.length;
+            j++
+        ){
+
+            const q=backgroundParticles[j];
+
+            const dx=p.x-q.x;
+            const dy=p.y-q.y;
+
+            const distance=
+                Math.sqrt(dx*dx+dy*dy);
+
+            if(distance<120){
+
+                const opacity=
+                    (1-distance/120)*.07;
+
+                backgroundCtx.strokeStyle=
+                    `rgba(75,200,255,${opacity})`;
+
+                backgroundCtx.lineWidth=.7;
+
+                backgroundCtx.beginPath();
+
+                backgroundCtx.moveTo(
+                    p.x,p.y
+                );
+
+                backgroundCtx.lineTo(
+                    q.x,q.y
+                );
+
+                backgroundCtx.stroke();
+            }
+        }
+    }
+}
+
+function updateBackgroundParticles(time){
+
+    backgroundParticles.forEach(p=>{
+
+        p.x+=p.drift;
+
+        p.y-=p.speed;
+
+        p.x+=
+            Math.sin(
+                time*.0007+p.phase
+            )*.12;
+
+        if(p.y<-10){
+
+            p.y=
+                backgroundHeight+10;
+
+            p.x=
+                Math.random()*backgroundWidth;
+        }
+
+        if(p.x<-10){
+            p.x=backgroundWidth+10;
+        }
+
+        if(p.x>backgroundWidth+10){
+            p.x=-10;
+        }
+
+    });
+}
+
+function drawBackgroundParticles(time){
+
+    backgroundParticles.forEach(p=>{
+
+        const pulse=
+            .7+
+            Math.sin(
+                time*.002+p.phase
+            )*.3;
+
+        backgroundCtx.beginPath();
+
+        backgroundCtx.arc(
+            p.x,
+            p.y,
+            p.radius,
+            0,
+            Math.PI*2
+        );
+
+        backgroundCtx.fillStyle=
+            `rgba(91,215,255,${p.opacity*pulse})`;
+
+        backgroundCtx.shadowBlur=8;
+
+        backgroundCtx.shadowColor=
+            "rgba(54,191,255,.5)";
+
+        backgroundCtx.fill();
+
+        backgroundCtx.shadowBlur=0;
+
+    });
+}
+
+function backgroundAnimation(time){
+
+    backgroundCtx.clearRect(
+        0,
+        0,
+        backgroundWidth,
+        backgroundHeight
+    );
+
+    drawBackgroundGlow(time);
+
+    drawBackgroundWaves(time);
+
+    drawCircuitLines(time);
+
+    updateBackgroundParticles(time);
+
+    drawParticleConnections();
+
+    drawBackgroundParticles(time);
+
+    requestAnimationFrame(
+        backgroundAnimation
+    );
+}
+
+resizeBackground();
+
+requestAnimationFrame(
+    backgroundAnimation
+);
+
+window.addEventListener(
+    "resize",
+    resizeBackground
+);
+
+
+/* =========================================================
+   WAVE LAB VARIABLES
+========================================================= */
+
+const canvas=
+    document.getElementById("waveCanvas");
+
+const ctx=
+    canvas.getContext("2d");
+
+const frequency=
+    document.getElementById("frequency");
+
+const amplitude=
+    document.getElementById("amplitude");
+
+const speed=
+    document.getElementById("speed");
+
+const frequencyValue=
+    document.getElementById("frequencyValue");
+
+const amplitudeValue=
+    document.getElementById("amplitudeValue");
+
+const speedValue=
+    document.getElementById("speedValue");
+
+const displayFrequency=
+    document.getElementById("displayFrequency");
+
+const displayAmplitude=
+    document.getElementById("displayAmplitude");
+
+const displaySpeed=
+    document.getElementById("displaySpeed");
+
+const displayWavelength=
+    document.getElementById("displayWavelength");
+
+const liveEquation=
+    document.getElementById("liveEquation");
+
+const waveTitle=
+    document.getElementById("waveTitle");
+
+const characterTitle=
+    document.getElementById("characterTitle");
+
+const characterText=
+    document.getElementById("characterText");
+
+const playPause=
+    document.getElementById("playPause");
+
+const stepButton=
+    document.getElementById("stepButton");
+
+const resetButton=
+    document.getElementById("resetButton");
+
+let currentWave="water";
+
+let isPlaying=true;
+
+let simulationTime=0;
+
+let lastTime=0;
+
+
+/* =========================================================
+   CANVAS RESIZE
+========================================================= */
+
+function resizeCanvas(){
+
+    const rect=
+        canvas.getBoundingClientRect();
+
+    const dpr=
+        Math.min(
+            window.devicePixelRatio||1,
+            2
+        );
+
+    canvas.width=
+        rect.width*dpr;
+
+    canvas.height=
+        rect.height*dpr;
+
+    ctx.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
+    );
+
+    draw();
+}
+
+
+/* =========================================================
+   PHYSICS PARAMETERS
+========================================================= */
+
+function getParameters(){
+
+    const f=
+        Number(frequency.value);
+
+    const a=
+        Number(amplitude.value);
+
+    const v=
+        Number(speed.value);
+
+    /*
+        PHYSICAL WAVELENGTH
+
+        This is the actual value used
+        for the physics calculation.
+    */
+
+    const wavelength=
+        v/f;
+
+    /*
+        Angular frequency:
+        ω = 2πf
+    */
+
+    const omega=
+        2*Math.PI*f;
+
+    /*
+        Wave number:
+        k = 2π/λ
+    */
+
+    const k=
+        2*Math.PI/wavelength;
+
+    /*
+        AUTO VISUAL SCALE
+
+        The numerical wavelength stays
+        physically correct.
+
+        The drawing is scaled so that
+        approximately 3 wavelengths
+        remain visible.
+    */
+
+    const w=
+        canvas.clientWidth;
+
+    const visualWavelength=
+        Math.max(
+            90,
+            w/3
+        );
+
+    const visualK=
+        2*Math.PI/visualWavelength;
+
+    return {
+
+        f,
+        a,
+        v,
+
+        wavelength,
+
+        omega,
+
+        k,
+
+        visualWavelength,
+
+        visualK
+
+    };
+}
+
+
+/* =========================================================
+   UI
+========================================================= */
+
+function updateSliderFill(slider){
+
+    const min=
+        Number(slider.min);
+
+    const max=
+        Number(slider.max);
+
+    const value=
+        Number(slider.value);
+
+    const percentage=
+        ((value-min)/(max-min))*100;
+
+    slider.style.setProperty(
+        "--fill",
+        percentage+"%"
+    );
+}
+
+function updateUI(){
+
+    const p=
+        getParameters();
+
+    frequencyValue.textContent=
+        p.f.toFixed(1)+" Hz";
+
+    amplitudeValue.textContent=
+        p.a;
+
+    speedValue.textContent=
+        p.v+" m/s";
+
+    displayFrequency.textContent=
+        p.f.toFixed(1)+" Hz";
+
+    displayAmplitude.textContent=
+        p.a;
+
+    displaySpeed.textContent=
+        p.v+" m/s";
+
+    displayWavelength.textContent=
+        p.wavelength.toFixed(2)+" m";
+
+    liveEquation.textContent=
+        `λ = ${p.v} / ${p.f.toFixed(1)} = ${p.wavelength.toFixed(2)} m`;
+
+    updateSliderFill(frequency);
+    updateSliderFill(amplitude);
+    updateSliderFill(speed);
+}
+
+function updateCharacter(){
+
+    const information={
+
+        water:{
+            title:"🌊 Water Wave",
+            text:
+            "Water waves transfer energy across the surface of water. The particles mainly move around their positions."
+        },
+
+        sound:{
+            title:"🔊 Sound Wave",
+            text:
+            "Sound is a mechanical longitudinal wave. Vibrating particles create compressions and rarefactions."
+        },
+
+        light:{
+            title:"💡 Light Wave",
+            text:
+            "Light is an electromagnetic wave. Its electric and magnetic fields oscillate perpendicular to its direction of travel."
+        },
+
+        transverse:{
+            title:"〰️ Transverse Wave",
+            text:
+            "In a transverse wave, particles move perpendicular to the direction in which the wave travels."
+        },
+
+        seismic:{
+            title:"🌎 Seismic Wave",
+            text:
+            "Earthquakes produce seismic waves. P-waves compress material while S-waves move material perpendicular to propagation."
+        },
+
+        longitudinal:{
+            title:"↔️ Longitudinal Wave",
+            text:
+            "Particles in a longitudinal wave move back and forth parallel to the direction of wave travel."
+        }
+
+    };
+
+    characterTitle.textContent=
+        information[currentWave].title;
+
+    characterText.textContent=
+        information[currentWave].text;
+
+    waveTitle.textContent=
+        information[currentWave].title;
+}
+
+
+/* =========================================================
+   DRAWING HELPERS
+========================================================= */
+
+function clearCanvas(){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    ctx.clearRect(
+        0,
+        0,
+        w,
+        h
+    );
+}
+
+function drawCenterLine(y=null){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    const lineY=
+        y===null ? h/2 : y;
+
+    ctx.strokeStyle=
+        "rgba(100,220,255,.13)";
+
+    ctx.lineWidth=1;
+
+    ctx.setLineDash([5,8]);
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        0,
+        lineY
+    );
+
+    ctx.lineTo(
+        w,
+        lineY
+    );
+
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+}
+
+function drawLabel(
+    text,
+    x,
+    y,
+    color="#c5f5ff",
+    size=12,
+    align="center"
+){
+
+    ctx.save();
+
+    ctx.font=
+        `700 ${size}px Arial`;
+
+    ctx.textAlign=
+        align;
+
+    ctx.textBaseline=
+        "middle";
+
+    const paddingX=8;
+    const paddingY=5;
+
+    const textWidth=
+        ctx.measureText(text).width;
+
+    let boxX=x;
+
+    if(align==="center"){
+        boxX=
+            x-
+            textWidth/2-
+            paddingX;
+    }
+
+    if(align==="right"){
+        boxX=
+            x-
+            textWidth-
+            paddingX;
+    }
+
+    ctx.fillStyle=
+        "rgba(1,12,25,.78)";
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+        boxX,
+        y-size/2-paddingY,
+        textWidth+paddingX*2,
+        size+paddingY*2,
+        6
+    );
+
+    ctx.fill();
+
+    ctx.fillStyle=color;
+
+    ctx.fillText(
+        text,
+        x,
+        y
+    );
+
+    ctx.restore();
+}
+
+function phase(x,p){
+
+    return(
+        p.visualK*x-
+        p.omega*simulationTime
+    );
+}
+
+
+/* =========================================================
+   WAVELENGTH MARKER
+========================================================= */
+
+function drawWavelengthMarker(
+    p,
+    x,
+    y
+){
+
+    const x2=
+        x+p.visualWavelength;
+
+    if(x2>canvas.clientWidth-10){
+        return;
+    }
+
+    ctx.save();
+
+    ctx.strokeStyle=
+        "rgba(180,245,255,.8)";
+
+    ctx.lineWidth=1.5;
+
+    ctx.setLineDash([5,5]);
+
+    ctx.beginPath();
+
+    ctx.moveTo(x,y);
+
+    ctx.lineTo(x2,y);
+
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    /*
+       Left arrow
+    */
+
+    ctx.beginPath();
+
+    ctx.moveTo(x,y);
+
+    ctx.lineTo(x+9,y-5);
+
+    ctx.moveTo(x,y);
+
+    ctx.lineTo(x+9,y+5);
+
+    ctx.stroke();
+
+    /*
+       Right arrow
+    */
+
+    ctx.beginPath();
+
+    ctx.moveTo(x2,y);
+
+    ctx.lineTo(x2-9,y-5);
+
+    ctx.moveTo(x2,y);
+
+    ctx.lineTo(x2-9,y+5);
+
+    ctx.stroke();
+
+    drawLabel(
+        `λ = ${p.wavelength.toFixed(2)} m`,
+        (x+x2)/2,
+        y-17,
+        "#8de7ff",
+        12
+    );
+
+    ctx.restore();
+}
+
+
+/* =========================================================
+   WATER
+========================================================= */
+
+function drawWater(p){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    const cx=
+        w*.36;
+
+    const cy=
+        h*.52;
+
+    const maxRadius=
+        Math.max(w,h)*.8;
+
+    /*
+       Ripple rings
+    */
+
+    for(
+        let ring=0;
+        ring<10;
+        ring++
+    ){
+
+        const radius=
+            (
+                simulationTime*
+                p.v*
+                .18+
+                ring*65
+            )%
+            maxRadius;
+
+        const alpha=
+            1-radius/maxRadius;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            cx,
+            cy,
+            radius,
+            0,
+            Math.PI*2
+        );
+
+        ctx.strokeStyle=
+            `rgba(54,200,255,${Math.max(0,alpha)*.6})`;
+
+        ctx.lineWidth=2;
+
+        ctx.stroke();
+    }
+
+    /*
+       Surface wave
+    */
+
+    ctx.beginPath();
+
+    for(
+        let x=0;
+        x<w;
+        x+=5
+    ){
+
+        const y=
+            h*.52+
+            Math.sin(
+                phase(x,p)
+            )*
+            p.a*.25;
+
+        if(x===0){
+            ctx.moveTo(x,y);
+        }else{
+            ctx.lineTo(x,y);
+        }
+    }
+
+    ctx.strokeStyle="#4edfff";
+
+    ctx.lineWidth=2.5;
+
+    ctx.stroke();
+
+    /*
+       Particles
+    */
+
+    for(
+        let x=20;
+        x<w;
+        x+=32
+    ){
+
+        const y=
+            h*.52+
+            Math.sin(
+                phase(x,p)
+            )*
+            p.a*.25;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            y,
+            3,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fillStyle="#8ceeff";
+
+        ctx.fill();
+    }
+
+    /*
+       Labels
+    */
+
+    const crestX=
+        w*.25;
+
+    const troughX=
+        crestX+
+        p.visualWavelength/2;
+
+    drawLabel(
+        "CREST",
+        crestX,
+        h*.52-p.a*.25-28,
+        "#8de7ff"
+    );
+
+    drawLabel(
+        "TROUGH",
+        troughX,
+        h*.52+p.a*.25+28,
+        "#8de7ff"
+    );
+
+    drawLabel(
+        "EQUILIBRIUM",
+        90,
+        h*.52,
+        "#b9dce7",
+        10
+    );
+
+    drawLabel(
+        "Water particle motion",
+        w*.75,
+        h*.52+55,
+        "#b9dce7",
+        11
+    );
+
+    drawWavelengthMarker(
+        p,
+        35,
+        h*.82
+    );
+
+    drawLabel(
+        "RIPPLE PROPAGATION →",
+        25,
+        30,
+        "#b9efff",
+        12,
+        "left"
+    );
+}
+
+
+/* =========================================================
+   TRANSVERSE
+========================================================= */
+
+function drawTransverse(p){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    const center=
+        h*.5;
+
+    const visualA=
+        p.a*.65;
+
+    drawCenterLine(center);
+
+    ctx.beginPath();
+
+    for(
+        let x=0;
+        x<w;
+        x+=4
+    ){
+
+        const y=
+            center+
+            Math.sin(
+                phase(x,p)
+            )*
+            visualA;
+
+        if(x===0){
+            ctx.moveTo(x,y);
+        }else{
+            ctx.lineTo(x,y);
+        }
+    }
+
+    ctx.strokeStyle="#55e4ff";
+
+    ctx.lineWidth=3;
+
+    ctx.stroke();
+
+    /*
+       Particles
+    */
+
+    for(
+        let x=20;
+        x<w;
+        x+=35
+    ){
+
+        const y=
+            center+
+            Math.sin(
+                phase(x,p)
+            )*
+            visualA;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            y,
+            4,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fillStyle="#d5fbff";
+
+        ctx.fill();
+    }
+
+    const crestX=
+        w*.25;
+
+    const troughX=
+        crestX+
+        p.visualWavelength/2;
+
+    drawLabel(
+        "CREST",
+        crestX,
+        center-visualA-28,
+        "#8de7ff"
+    );
+
+    drawLabel(
+        "TROUGH",
+        troughX,
+        center+visualA+28,
+        "#8de7ff"
+    );
+
+    drawLabel(
+        "EQUILIBRIUM",
+        90,
+        center,
+        "#b9dce7",
+        10
+    );
+
+    drawLabel(
+        "PARTICLE MOTION ↕",
+        w*.74,
+        center-visualA-45,
+        "#d5fbff",
+        11
+    );
+
+    drawLabel(
+        "WAVE TRAVELS →",
+        w*.75,
+        center+visualA+65,
+        "#8de7ff",
+        11
+    );
+
+    drawWavelengthMarker(
+        p,
+        35,
+        h*.86
+    );
+}
+
+
+/* =========================================================
+   LONGITUDINAL
+========================================================= */
+
+function drawLongitudinal(p){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    const center=
+        h*.5;
+
+    drawCenterLine(center);
+
+    const spacing=25;
+
+    const visualA=
+        Math.min(
+            p.a*.22,
+            spacing*.42
+        );
+
+    /*
+       Draw particles
+    */
+
+    for(
+        let base=0;
+        base<w;
+        base+=spacing
+    ){
+
+        const displacement=
+            Math.sin(
+                phase(base,p)
+            )*
+            visualA;
+
+        const x=
+            base+displacement;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            center,
+            4,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fillStyle="#74eaff";
+
+        ctx.fill();
+    }
+
+    /*
+       Find approximate compression
+       and rarefaction positions.
+    */
+
+    const compressionX=
+        w*.27;
+
+    const rarefactionX=
+        compressionX+
+        p.visualWavelength/2;
+
+    drawLabel(
+        "COMPRESSION",
+        compressionX,
+        center-75,
+        "#ffbf72",
+        12
+    );
+
+    drawLabel(
+        "RAREFACTION",
+        rarefactionX,
+        center+75,
+        "#8de7ff",
+        12
+    );
+
+    drawLabel(
+        "PARTICLE MOTION →",
+        w*.26,
+        center-115,
+        "#d5fbff",
+        11
+    );
+
+    drawLabel(
+        "WAVE TRAVELS →",
+        w*.73,
+        center+115,
+        "#8de7ff",
+        11
+    );
+
+    drawWavelengthMarker(
+        p,
+        35,
+        h*.86
+    );
+}
+
+
+/* =========================================================
+   SOUND
+========================================================= */
+
+function drawSound(p){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    const center=
+        h*.38;
+
+    const spacing=22;
+
+    const visualA=
+        Math.min(
+            p.a*.18,
+            spacing*.40
+        );
+
+    /*
+       Particle compression
+    */
+
+    for(
+        let base=0;
+        base<w;
+        base+=spacing
+    ){
+
+        const displacement=
+            Math.sin(
+                phase(base,p)
+            )*
+            visualA;
+
+        const x=
+            base+displacement;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            center,
+            3.5,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fillStyle="#67e7ff";
+
+        ctx.fill();
+    }
+
+    /*
+       Pressure graph
+
+       For a longitudinal wave:
+       pressure variation is phase-shifted
+       relative to particle displacement.
+    */
+
+    const graphY=
+        h*.70;
+
+    ctx.beginPath();
+
+    for(
+        let x=0;
+        x<w;
+        x+=4
+    ){
+
+        const pressure=
+            Math.sin(
+                phase(x,p)+Math.PI/2
+            );
+
+        const y=
+            graphY+
+            pressure*
+            p.a*.28;
+
+        if(x===0){
+            ctx.moveTo(x,y);
+        }else{
+            ctx.lineTo(x,y);
+        }
+    }
+
+    ctx.strokeStyle="#a0f2ff";
+
+    ctx.lineWidth=2;
+
+    ctx.stroke();
+
+    drawCenterLine(graphY);
+
+    drawLabel(
+        "COMPRESSION",
+        w*.27,
+        center-65,
+        "#ffbf72",
+        12
+    );
+
+    drawLabel(
+        "RAREFACTION",
+        w*.50,
+        center-65,
+        "#8de7ff",
+        12
+    );
+
+    drawLabel(
+        "PRESSURE VARIATION",
+        w*.50,
+        graphY-65,
+        "#d5baff",
+        11
+    );
+
+    drawLabel(
+        "PARTICLE MOTION →",
+        w*.73,
+        center+45,
+        "#d5fbff",
+        11
+    );
+
+    drawWavelengthMarker(
+        p,
+        35,
+        h*.88
+    );
+}
+
+
+/* =========================================================
+   LIGHT
+========================================================= */
+
+function drawLight(p){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    const center=
+        h*.5;
+
+    const visualA=
+        p.a*.55;
+
+    /*
+       Propagation axis
+    */
+
+    ctx.strokeStyle=
+        "rgba(255,255,255,.15)";
+
+    ctx.lineWidth=1;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        0,
+        center
+    );
+
+    ctx.lineTo(
+        w,
+        center
+    );
+
+    ctx.stroke();
+
+    /*
+       Electric field
+    */
+
+    ctx.beginPath();
+
+    for(
+        let x=0;
+        x<w;
+        x+=4
+    ){
+
+        const y=
+            center+
+            Math.sin(
+                phase(x,p)
+            )*
+            visualA;
+
+        if(x===0){
+            ctx.moveTo(x,y);
+        }else{
+            ctx.lineTo(x,y);
+        }
+    }
+
+    ctx.strokeStyle="#6cecff";
+
+    ctx.lineWidth=3;
+
+    ctx.stroke();
+
+    /*
+       Magnetic field
+    */
+
+    ctx.beginPath();
+
+    for(
+        let x=0;
+        x<w;
+        x+=4
+    ){
+
+        const y=
+            center+
+            Math.cos(
+                phase(x,p)
+            )*
+            p.a*.35;
+
+        if(x===0){
+            ctx.moveTo(x,y);
+        }else{
+            ctx.lineTo(x,y);
+        }
+    }
+
+    ctx.strokeStyle="#9bb7ff";
+
+    ctx.lineWidth=2;
+
+    ctx.stroke();
+
+    drawLabel(
+        "E FIELD",
+        w*.27,
+        center-visualA-30,
+        "#ffe680",
+        13
+    );
+
+    drawLabel(
+        "B FIELD",
+        w*.27,
+        center+p.a*.35+30,
+        "#aebfff",
+        13
+    );
+
+    drawLabel(
+        "PROPAGATION →",
+        w*.75,
+        center-90,
+        "#ffffff",
+        11
+    );
+
+    drawLabel(
+        "Electric field ⟂ Magnetic field ⟂ Propagation",
+        w*.50,
+        h*.87,
+        "#b9dce7",
+        10
+    );
+
+    drawWavelengthMarker(
+        p,
+        35,
+        h*.94
+    );
+}
+
+
+/* =========================================================
+   SEISMIC
+========================================================= */
+
+function drawSeismic(p){
+
+    const w=
+        canvas.clientWidth;
+
+    const h=
+        canvas.clientHeight;
+
+    const upper=
+        h*.32;
+
+    const lower=
+        h*.68;
+
+    /*
+       P-wave
+
+       P-waves are longitudinal.
+    */
+
+    const pSpacing=24;
+
+    const pAmplitude=
+        Math.min(
+            p.a*.18,
+            pSpacing*.4
+        );
+
+    for(
+        let base=0;
+        base<w;
+        base+=pSpacing
+    ){
+
+        const displacement=
+            Math.sin(
+                phase(base,p)
+            )*
+            pAmplitude;
+
+        const x=
+            base+displacement;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            upper,
+            4,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fillStyle="#5de5ff";
+
+        ctx.fill();
+    }
+
+    /*
+       S-wave
+
+       S-waves are transverse.
+    */
+
+    const sAmplitude=
+        p.a*.42;
+
+    ctx.beginPath();
+
+    for(
+        let x=0;
+        x<w;
+        x+=4
+    ){
+
+        const y=
+            lower+
+            Math.sin(
+                phase(x,p)
+            )*
+            sAmplitude;
+
+        if(x===0){
+            ctx.moveTo(x,y);
+        }else{
+            ctx.lineTo(x,y);
+        }
+    }
+
+    ctx.strokeStyle="#b4c5ff";
+
+    ctx.lineWidth=3;
+
+    ctx.stroke();
+
+    drawCenterLine(upper);
+    drawCenterLine(lower);
+
+    drawLabel(
+        "P-WAVE",
+        w*.22,
+        upper-70,
+        "#ffbf72",
+        14
+    );
+
+    drawLabel(
+        "COMPRESSION ↔",
+        w*.40,
+        upper+60,
+        "#ffbf72",
+        11
+    );
+
+    drawLabel(
+        "S-WAVE",
+        w*.22,
+        lower-90,
+        "#8de7ff",
+        14
+    );
+
+    drawLabel(
+        "UP / DOWN MOTION ↕",
+        w*.48,
+        lower-70,
+        "#8de7ff",
+        11
+    );
+
+    drawLabel(
+        "P-WAVE TRAVELS →",
+        w*.75,
+        upper-35,
+        "#d5fbff",
+        10
+    );
+
+    drawLabel(
+        "S-WAVE TRAVELS →",
+        w*.75,
+        lower-35,
+        "#d5fbff",
+        10
+    );
+
+    drawLabel(
+        "P = longitudinal",
+        25,
+        30,
+        "#ffbf72",
+        11,
+        "left"
+    );
+
+    drawLabel(
+        "S = transverse",
+        25,
+        52,
+        "#8de7ff",
+        11,
+        "left"
+    );
+}
+
+
+/* =========================================================
+   MAIN DRAW
+========================================================= */
+
+function draw(){
+
+    clearCanvas();
+
+    const p=
+        getParameters();
+
+    switch(currentWave){
+
+        case "water":
+            drawWater(p);
+            break;
+
+        case "sound":
+            drawSound(p);
+            break;
+
+        case "light":
+            drawLight(p);
+            break;
+
+        case "transverse":
+            drawTransverse(p);
+            break;
+
+        case "seismic":
+            drawSeismic(p);
+            break;
+
+        case "longitudinal":
+            drawLongitudinal(p);
+            break;
+    }
+}
+
+
+/* =========================================================
+   ANIMATION LOOP
+========================================================= */
+
+function animationLoop(now){
+
+    if(!lastTime){
+        lastTime=now;
+    }
+
+    const delta=
+        Math.min(
+            .05,
+            (now-lastTime)/1000
+        );
+
+    lastTime=now;
+
+    if(isPlaying){
+        simulationTime+=delta;
+    }
+
+    draw();
+
+    requestAnimationFrame(
+        animationLoop
+    );
+}
+
+
+/* =========================================================
+   WAVE BUTTONS
+========================================================= */
+
+document
+.querySelectorAll(".waveButton")
+.forEach(button=>{
+
+    button.addEventListener(
+        "click",
+        ()=>{
+
+            document
+            .querySelectorAll(".waveButton")
+            .forEach(btn=>{
+                btn.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            currentWave=
+                button.dataset.wave;
+
+            updateCharacter();
+
+            draw();
+
+        }
+    );
+});
+
+
+/* =========================================================
+   SLIDERS
+========================================================= */
+
+[
+    frequency,
+    amplitude,
+    speed
+].forEach(slider=>{
+
+    slider.addEventListener(
+        "input",
+        ()=>{
+
+            updateUI();
+
+            draw();
+
+        }
+    );
+
+});
+
+
+/* =========================================================
+   PLAY / PAUSE
+========================================================= */
+
+playPause.addEventListener(
+    "click",
+    ()=>{
+
+        isPlaying=
+            !isPlaying;
+
+        playPause.textContent=
+            isPlaying
+            ? "⏸ Pause"
+            : "▶ Play";
+
+    }
+);
+
+
+/* =========================================================
+   STEP
+========================================================= */
+
+stepButton.addEventListener(
+    "click",
+    ()=>{
+
+        isPlaying=false;
+
+        playPause.textContent=
+            "▶ Play";
+
+        simulationTime+=.08;
+
+        draw();
+
+    }
+);
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+resetButton.addEventListener(
+    "click",
+    ()=>{
+
+        frequency.value=1;
+
+        amplitude.value=50;
+
+        speed.value=100;
+
+        simulationTime=0;
+
+        isPlaying=true;
+
+        playPause.textContent=
+            "⏸ Pause";
+
+        updateUI();
+
+        draw();
+
+    }
+);
+
+
+/* =========================================================
+   LOADING SYSTEM
+========================================================= */
+
+const loadingScreen=
+    document.getElementById("loadingScreen");
+
+const loadingProgress=
+    document.getElementById("loadingProgress");
+
+const loadingPercent=
+    document.getElementById("loadingPercent");
+
+const loadingStatus=
+    document.getElementById("loadingStatus");
+
+const skipLoading=
+    document.getElementById("skipLoading");
+
+const mainContent=
+    document.getElementById("mainContent");
+
+const waterTransition=
+    document.getElementById("waterTransition");
+
+let loadingFinished=false;
+
+const loadingStart=
+    performance.now();
+
+const loadingDuration=
+    3000;
+
+function enterWebsite(){
+
+    if(loadingFinished){
+        return;
+    }
+
+    loadingFinished=true;
+
+    loadingProgress.style.width="100%";
+
+    loadingPercent.textContent="100%";
+
+    loadingStatus.textContent=
+        "WAVE TRANSITION...";
+
+    mainContent.classList.add("show");
+
+    resizeCanvas();
+
+    updateUI();
+
+    updateCharacter();
+
+    draw();
+
+    waterTransition.classList.add("active");
+
+    setTimeout(()=>{
+
+        loadingScreen.classList.add("hide");
+
+    },700);
+
+    setTimeout(()=>{
+
+        waterTransition.classList.remove("active");
+
+    },1700);
+
+}
+
+function updateLoading(now){
+
+    if(loadingFinished){
+        return;
+    }
+
+    const elapsed=
+        now-loadingStart;
+
+    const progress=
+        Math.min(
+            100,
+            (elapsed/loadingDuration)*100
+        );
+
+    loadingProgress.style.width=
+        progress+"%";
+
+    loadingPercent.textContent=
+        Math.floor(progress)+"%";
+
+    if(progress<30){
+
+        loadingStatus.textContent=
+            "INITIALIZING WAVE ENGINE...";
+
+    }else if(progress<60){
+
+        loadingStatus.textContent=
+            "CALIBRATING PARTICLES...";
+
+    }else if(progress<85){
+
+        loadingStatus.textContent=
+            "LOADING PHYSICS SIMULATIONS...";
+
+    }else{
+
+        loadingStatus.textContent=
+            "PREPARING WAVE LABORATORY...";
+
+    }
+
+    if(progress>=100){
+
+        enterWebsite();
+
+        return;
+    }
+
+    requestAnimationFrame(
+        updateLoading
+    );
+}
+
+
+/* =========================================================
+   SKIP
+========================================================= */
+
+skipLoading.addEventListener(
+    "click",
+    enterWebsite
+);
+
+
+/* =========================================================
+   START EVERYTHING
+========================================================= */
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+window.addEventListener(
+    "load",
+    ()=>{
+
+        resizeCanvas();
+
+        updateUI();
+
+        updateCharacter();
+
+        draw();
+
+        requestAnimationFrame(
+            animationLoop
+        );
+
+        requestAnimationFrame(
+            updateLoading
+        );
+
+    }
+);
+
+</script>
+
+</body>
+</html>
